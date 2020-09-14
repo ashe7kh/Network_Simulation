@@ -8,14 +8,21 @@ import (
 	"strings"
 )
 
+type message struct{
+	Content string
+	Time string
+}
+
+//todo allow for the creation of numerous unique ID's and IP's to foster multicast functionality
 type Config struct {
 	MinD int
 	MaxD int
 	ID   int
-	port string
+	Port string
 	IP   string
 }
 
+//extract delay values and populate the structure for future reference
 func getDelayVals(firstLine []string) [2]int { //to tidy up ReadFile fxn; for the first line with delay values
 	if len(firstLine) != 2 {
 		panic(1)
@@ -40,7 +47,6 @@ func ReadFile(FileName string) []Config {
 
 	//open and read config file
 	ConfigFile, err := os.Open(FileName) //assuming this will be file name
-	type file string
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -61,16 +67,10 @@ func ReadFile(FileName string) []Config {
 		if err != nil {
 			panic(err)
 		}
-		configs[counter].port = temp[1]
+		configs[counter].Port = temp[1]
 		configs[counter].IP = temp[2]
 
 		counter += 1
 	}
-	//pseudocode
-	/*
-	   parse line 1 from file and populate minD and maxD
-	   readfile by line: AFTER line 1 break each line into 3 strings: populate fields from this, and set minD and maxD
-
-	*/
 	return configs // finish writing return statement
 }
