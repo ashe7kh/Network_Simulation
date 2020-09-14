@@ -4,39 +4,62 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"../config"
+	"math/rand"
 	"net"
 	"strings"
 	"time"
 )
 
-type email struct{
-	To string
-	From string
-	Title string
+type message struct{
 	Content string
 	Time string
 }
 
-func printEmail(Email email){ //function that prints the email on the server side
+//type cfile = config.Config
+var c cfile
 
-	fmt.Println("\n -------------------------- \n --- New Incoming Email --- \n -------------------------- \n")
-	fmt.Println("To: " + Email.To)
-	fmt.Println("From: " + Email.From)
-	fmt.Println("Title: " + Email.Title)
-	fmt.Println("Content: " + Email.Content)
-	fmt.Println("Confirmed sent at: " + Email.Time)
+func printMessage(Message message){ //function that prints the email on the server side
+
+	fmt.Println("\n -------------------------- \n --- New Incoming Message --- \n -------------------------- \n")
+	fmt.Println("Message Content: " + Message.Content)
+	fmt.Println("Confirmed sent at: " + Message.Time)
 	fmt.Println("\n -------------------------- \n")
 }
 
-func EmailToString(Email email) string{ //function that converts the email to a string to be sent to the client
+func MessageToString(Message message) string{ //function that converts the email to a string to be sent to the client
+
 	var s string
-	s = "\n -------------------------\n --- Email Client Copy --- \n ------------------------- \n"
-	s += "To: " + Email.To + "\n"
-	s += "From: " + Email.From + "\n"
-	s += "Title: " + Email.Title + "\n"
-	s += "Content: " + Email.Content + "\n"
-	s += "Time sent: " + Email.Time + "\n -------------------------\n"
+	s = "\n -------------------------\n --- message Client Copy --- \n ------------------------- \n"
+	s += "Content: " + Message.Content + "\n"
+	t := time.Now()
+	timeRecieved := t.Format(time.RFC3339)
+	s += "Time recieved: " + timeRecieved + "\n -------------------------\n"
 	return s
+}
+
+func MessageDelay(Config cfile, Message message) string{
+
+	min := Config.MinD
+	max := Config.MaxD
+	n := rand.Intn(max-min) + min
+	printMessage(Message)
+	var d time.Duration = time.Duration(n * int(time.Millisecond))
+	tick := time.Tick(d)
+
+	//convert the email back into a string to be sent back to the client
+	a := MessageToString(Message)
+	return a
+}
+
+func parser(netdata string) message{
+	var m message
+	m.Content = netdata
+	t := time.Now()
+	myTime := t.Format(time.RFC3339) + "\n"
+	m.Time = myTime
+	return m
+
 }
 
 func main() {
@@ -47,53 +70,41 @@ func main() {
 	}
 	//dont close until exited
 	defer ln.Close()
-
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			panic(err)
 		}
-
 		//read info from message
 		for {
-			//create an array of structure type email
-			const num = 2
-			var emails [2]email
-
 			//read the incoming information with protocol in case of error
 			netData, err := bufio.NewReader(conn).ReadString('\n')
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
-
-
-			//parse out each portion of the email and then populate each field of email structure
-			for i := 0; i < num; i++ {
-
-				input := strings.Split(netData, ";")
-
+			//parse out each portion of the message and then populate each field of message structure
+			for{
+				var messages []message
+				input := strings.NewReader(netData)
 				t := time.Now()
 				myTime := t.Format(time.RFC3339) + "\n"
+				messages[0].Content = string(input)
 
-				emails[i] = email{input[0], input[1], input[2], input[3], myTime}
+				MessageDelay(Config config, )
 			}
 
 			//print the email on the server
-			printEmail(emails[0])
 
-			//convert the email back into a string to be sent back to the client
-			a := EmailToString(emails[0])
+			io.WriteString(conn, a + "\n")
+
+
 
 			//termination protocol allows the client to end connection manually
-			if strings.TrimSpace(string(netData)) == "END" {
+			if strings.TrimSpace(netData) == "END" {
 				fmt.Println("Exiting TCP server!")
 				return
 			}
-
-			// send confirmation message by printing duplicate of the message on client side
-			//this confirmation email triggers termination protocol
-			io.WriteString(conn, a + "END\n|")
 		}
 	}
 }
