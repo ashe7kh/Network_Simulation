@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-type message struct{
+type message struct {
 	Content string
-	Time string
+	Time    string
 }
 
 //todo allow for the creation of numerous unique ID's and IP's to foster multicast functionality
@@ -18,13 +18,12 @@ type Config struct {
 	MinD int
 	MaxD int
 	ID   int
-	Port string
 	IP   string
+	Port string
 }
 
 //extract delay values and populate the structure for future reference
 func getDelayVals(firstLine []string) [2]int { //to tidy up ReadFile fxn; for the first line with delay values
-	fmt.Print(firstLine)
 	if len(firstLine) != 2 {
 		panic(1)
 	}
@@ -62,12 +61,12 @@ func ReadFile(FileName string) []Config {
 
 	for scanner.Scan() { //go line by line through the file
 		temp := strings.Split(scanner.Text(), " ")
-		id,err := strconv.Atoi(temp[0])
-		if err != nil{
+		id, err := strconv.Atoi(temp[0])
+		if err != nil {
 			panic(err)
 		}
-		conf := Config{MinD: DVals[0], MaxD: DVals[1], ID: id, Port: temp[1], IP: temp[2]} //populate fields
-		configs = append(configs,conf) // append to slice
+		conf := Config{MinD: DVals[0], MaxD: DVals[1], ID: id, IP: temp[1], Port: temp[2]} //populate fields
+		configs = append(configs, conf)                                                    // append to slice
 	}
 	return configs // finish writing return statement
 }
