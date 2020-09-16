@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"bufio"
@@ -70,7 +70,4 @@ func ReadFile(FileName string) []Config {
 		configs = append(configs,conf) // append to slice
 	}
 	return configs // finish writing return statement
-}
-func main(){
-	fmt.Println(ReadFile("config.txt"))
 }
