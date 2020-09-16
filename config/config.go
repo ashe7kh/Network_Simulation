@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"bufio"
@@ -24,6 +24,7 @@ type Config struct {
 
 //extract delay values and populate the structure for future reference
 func getDelayVals(firstLine []string) [2]int { //to tidy up ReadFile fxn; for the first line with delay values
+	fmt.Print(firstLine)
 	if len(firstLine) != 2 {
 		panic(1)
 	}
@@ -53,24 +54,23 @@ func ReadFile(FileName string) []Config {
 	defer ConfigFile.Close()
 
 	//read the files contents
-	scanner := bufio.NewScanner(ConfigFile)
+	scanner := bufio.NewScanner(ConfigFile) //read the file line by line
 	//parse out file line by line
-	DelayVals := getDelayVals(strings.Split(scanner.Text(), " ")) //delay values, 0th index = min, 1st = max
-	scanner.Scan()                                                //move out of the first line
-	counter := 0
-	for scanner.Scan() {
-		//parse out details of the config file to then populate the necessary fields
+	scanner.Scan()
+	DVals := getDelayVals(strings.Split(scanner.Text(), " ")) //delay values, 0th index = min, 1st = max
+	//move out of the first line
+
+	for scanner.Scan() { //go line by line through the file
 		temp := strings.Split(scanner.Text(), " ")
-		configs[counter].MinD = DelayVals[0]
-		configs[counter].MaxD = DelayVals[1]
-		configs[counter].ID, err = strconv.Atoi(temp[0])
-		if err != nil {
+		id,err := strconv.Atoi(temp[0])
+		if err != nil{
 			panic(err)
 		}
-		configs[counter].Port = temp[1]
-		configs[counter].IP = temp[2]
-
-		counter += 1
+		conf := Config{MinD: DVals[0], MaxD: DVals[1], ID: id, Port: temp[1], IP: temp[2]} //populate fields
+		configs = append(configs,conf) // append to slice
 	}
 	return configs // finish writing return statement
+}
+func main(){
+	fmt.Println(ReadFile("config.txt"))
 }
