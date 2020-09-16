@@ -2,6 +2,7 @@ package main
 
 import (
 	"../config"
+	"../message"
 	"bufio"
 	"fmt"
 	"net"
@@ -11,13 +12,12 @@ import (
 
 //type cfile = config.Config
 type cfile = config.Config
-func readF(s string) []cfile{
+
+func readF(s string) []cfile {
 	return config.ReadFile(s)
 }
-type message struct {
-	Content string
-	Time    string
-}
+
+type msg = message.Message
 
 func Messageprint(ID int, Message string) { //function that prints the message on the server side
 
@@ -42,7 +42,12 @@ func main() {
 	var config cfile
 	config = readF("config.txt")[0] //two processes, received from process 1 => ID = 1 => index = 0
 	//declare type of communication as well as the port of access
-	address := config.IP + ":" + config.Port // need to differentiate between both ID's and IP's
+	//address := config.IP + ":" + config.Port // need to differentiate between both ID's and IP's
+
+	fmt.Print(config.IP)
+	fmt.Print(config.Port)
+	fmt.Print(config.IP + ":" + config.Port)
+	address := config.IP + ":" + config.Port
 	ln, err := net.Listen("tcp", address)
 	if err != nil {
 		panic(err)
