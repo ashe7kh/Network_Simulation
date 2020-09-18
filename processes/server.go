@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,7 +23,7 @@ type msg = message.Message
 func Messageprint(ID int, Message string) { //function that prints the message on the server side
 
 	fmt.Println("\n -------------------------- \n --- New Incoming Message --- \n -------------------------- \n")
-	fmt.Println("Message from:" + string(ID)) //unique identity of sender
+	fmt.Println("Message from:" + strconv.Itoa(ID)) //unique identity of sender
 	fmt.Println("Message Content: " + Message)
 	t := time.Now()
 	myTime := t.Format(time.RFC850) + "\n"
@@ -44,9 +45,7 @@ func main() {
 	//declare type of communication as well as the port of access
 	//address := config.IP + ":" + config.Port // need to differentiate between both ID's and IP's
 
-	fmt.Print(config.IP)
-	fmt.Print(config.Port)
-	fmt.Print(config.IP + ":" + config.Port)
+
 	address := config.IP + ":" + config.Port
 	ln, err := net.Listen("tcp", address)
 	if err != nil {
@@ -74,7 +73,7 @@ func main() {
 			if strings.TrimSpace(netData) != "END" {
 				//if termination protocol is not called then receive and print the message
 				UnicastReceive(config, netData)
-			} else {
+			} else if strings.TrimSpace(netData) == "END"{
 				fmt.Println("Exiting TCP server!")
 				return
 			}
