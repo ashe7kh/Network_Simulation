@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,83 +18,60 @@ type Message = message.Message
 
 //function that prints the email on the client side
 //prived time that the message was sent
-func printMessage(ID int, message Message) {
-	fmt.Println("\n -------------------------- \n ---Message Confirmed Sent--- \n -------------------------- \n")
-	fmt.Println("Message Sent to:" + string(ID)) //add the unique id from config file
-	fmt.Println("Message Content: " + message.Content)
+func printMessage(ID int, message string) {
+	fmt.Println("\n ---------------------------- \n ---Message Confirmed Sent--- \n --------------------------- \n")
+	fmt.Println("Message Sent to process:" + strconv.Itoa(ID))//add the unique id from config file
+	fmt.Println("Message Content: " + message)
 	t := time.Now()
 	timeSent := t.Format(time.RFC850)
 	fmt.Println("Confirmed sent at: " + timeSent)
-	timeSent = message.Time
-	fmt.Println("\n -------------------------- \n")
+	//timeSent = message.Time
+	fmt.Println("\n --------------------------- \n")
 }
 
-func UnicastSend(config confile, m Message) {
+func UnicastSend(conn net.Conn, m Message) {
+	//call delay to waste some time
 
-	//obtain desired identifiers as well as IP addresses from config file
-	//establish desired connection from config parameters
-	//creates TCP connection on the client side
-	address := config.IP + ":" + config.Port
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		panic(err)
-	}
+	//actually send the message
+	fmt.Fprintf(conn, m.Content+"\n")
 
-	defer conn.Close()
+	//print message client side with time stamp
+	printMessage(m.Local_ID, m.Content)
 
-	//termination protocol
-	if strings.TrimSpace(m.Content) != "END" {
-		//send and then print the message on client APP side
-		//todo have time be updated dynamically with the sending of the message not immediately after
-		fmt.Fprintf(conn, m.Content+"\n")
-		printMessage(config.ID, m)
+}
 
-	} else { //end communication
-		fmt.Println("Exiting TCP Client")
-		return
-	}
-
+func delay(c confile){
+	max := c.MaxD
+	min := c.MinD
+	//add timer to elapse a duration
+	//call
+	n := rand.Intn(max - min) + min
+	ticker := time.NewTicker(time.Duration(n) * time.Millisecond)
+	<- ticker.C
+	ticker.Stop()
 }
 
 //will extract the message itself from command line and then add delay prior to sending
-func MessageParse(config confile, text string) {
-	var c = config
-	var m Message
+func MessageParse(text string) string{
 
-	for {
+	//create a string array to then parse out the message from the ID and IP info
+	input := strings.Split(text, " ")
 
-		//create a string array to then parse out the message from the ID and IP info
-		input := strings.Split(text, " ")
+	//extract text after declarations
+	MessageActual := input[2:]
 
-		//we only care about the information after declarations
-		MessageActual := input[2:]
+	//convert the array to a simple string
+	text = strings.Join(MessageActual, " ")
 
-		//convert the array to a simple string
-		text := strings.Join(MessageActual, " ")
-
-		//fill structure with message content
-		m.Content = text
-
-		//add a delay via timer and AfterFunc
-		//we determine delay amount by recalling the information from config file
-		//min := c.MinD
-		//max := c.MaxD
-		n := rand.Intn(config.MaxD-config.MinD) + config.MinD
-
-		timer := time.Duration(n) * time.Millisecond
-
-		time.AfterFunc(timer, func() {
-			UnicastSend(c, m)
-		})
-
-	}
+	return text
 
 }
 
 func main() {
 	var c confile
+	var m Message
 	//var m message
-	c = config.ReadFile("config.txt")[1] //two processes, send to process 2 => ID = 2 => index = 1
+	c = (config.ReadFile("config.txt"))[1] //two processes, send to process 2 => ID = 2 => index = 1
 
 	//prompt user to construct message then read message
 	//TODO add feature to detect incorrect format and provide instruction to correct
@@ -104,8 +82,29 @@ func main() {
 	//convert text to a string
 	text, _ := reader.ReadString('\n')
 
-	//then send the text to a parser function to only send desired information
-	//parser also implements a delay in the form of a timer
-	MessageParse(c, text)
+	//create TCP channel
+	address := c.IP + ":" + c.Port
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		panic(err)
+	}
+
+	defer conn.Close()
+
+	//extract only te message from the command line
+	m.Content = MessageParse(text)
+	m.Local_ID = c.ID
+	if strings.TrimSpace(text) != "END" {
+		//add delay before sending
+		delay(c)
+
+		//send the message
+		UnicastSend(conn, m)
+		m.Time = time.Now()
+
+	} else { //end communication
+		fmt.Println("Exiting TCP Client")
+		return
+	}
 
 }
