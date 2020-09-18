@@ -37,6 +37,8 @@ func UnicastSend(conn net.Conn, m Message) {
 
 	//print message client side with time stamp
 	printMessage(m.Local_ID, m.Content)
+	m.Time = time.Now().Format(time.RFC850)
+	//main()
 
 }
 
@@ -67,6 +69,8 @@ func MessageParse(text string) string{
 
 }
 
+
+
 func main() {
 	var c confile
 	var m Message
@@ -76,11 +80,8 @@ func main() {
 	//prompt user to construct message then read message
 	//TODO add feature to detect incorrect format and provide instruction to correct
 	//read what was written on the command line
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Please enter your Message:")
+	//reader := bufio.NewReader(os.Stdin)
 
-	//convert text to a string
-	text, _ := reader.ReadString('\n')
 
 	//create TCP channel
 	address := c.IP + ":" + c.Port
@@ -90,21 +91,29 @@ func main() {
 	}
 
 	defer conn.Close()
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Please enter your Message:")
 
-	//extract only te message from the command line
-	m.Content = MessageParse(text)
-	m.Local_ID = c.ID
-	if strings.TrimSpace(text) != "END" {
-		//add delay before sending
-		delay(c)
+		//convert text to a string
+		text, _ := reader.ReadString('\n')
+		//extract only te message from the command line
+		m.Content = MessageParse(text)
+		m.Local_ID = c.ID
 
-		//send the message
-		UnicastSend(conn, m)
-		m.Time = time.Now()
+		if strings.TrimSpace(m.Content) != "END" {
+			//add delay before sending
+			delay(c)
 
-	} else { //end communication
-		fmt.Println("Exiting TCP Client")
-		return
+			//send the message
+			UnicastSend(conn, m)
+
+		} else if strings.TrimSpace(m.Content) == "END"{ //end communication
+			UnicastSend(conn, m)
+			fmt.Println("Exiting TCP Client")
+			return
+		}
+
 	}
 
 }
